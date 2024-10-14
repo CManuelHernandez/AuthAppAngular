@@ -2,7 +2,12 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environments } from './../../../environments/environments';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
-import { AuthStatus, LoginResponse, User } from '../interfaces';
+import {
+  AuthStatus,
+  LoginResponse,
+  RegisterResponse,
+  User,
+} from '../interfaces';
 import { CheckTokenResponse } from '../interfaces/chek-token.response';
 
 @Injectable({ providedIn: 'root' })
@@ -34,6 +39,16 @@ export class AuthService {
     const body = { email: email, password: password };
 
     return this.http.post<LoginResponse>(url, body).pipe(
+      map(({ user, token }) => this.setAuthentication(user, token)),
+      catchError((err) => throwError(() => err.error.message))
+    );
+  }
+
+  singUp(name: string, email: string, password: string): Observable<boolean> {
+    const url = `${this.baseUrl}/auth/register`;
+    const body = { name, email, password };
+
+    return this.http.post<RegisterResponse>(url, body).pipe(
       map(({ user, token }) => this.setAuthentication(user, token)),
       catchError((err) => throwError(() => err.error.message))
     );
