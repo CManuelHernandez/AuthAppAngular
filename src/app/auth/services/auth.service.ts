@@ -1,8 +1,9 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environments } from './../../../environments/environments';
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, tap, throwError } from 'rxjs';
+import { catchError, map, Observable, of, tap, throwError } from 'rxjs';
 import { AuthStatus, LoginResponse, User } from '../interfaces';
+import { CheckTokenResponse } from '../interfaces/chek-token.response';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -32,6 +33,30 @@ export class AuthService {
 
       // Todo: erroes
       catchError((err) => throwError(() => err.error.message))
+    );
+  }
+
+  checkAuthStatus(): Observable<boolean> {
+    const url = `${this.baseUrl}/auth/check-token`;
+    const token = localStorage.getItem('token');
+
+    if (!token) return of(false);
+
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<CheckTokenResponse>(url, { headers: headers }).pipe(
+      map(({ user, token }) => {
+        this._currentUser.set(user),
+          this._authStatus.set(AuthStatus.authenticated);
+        localStorage.setItem('token', token);
+
+        return true;
+      }),
+      //Error
+      catchError(() => {
+        this._authStatus.set(AuthStatus.notAuthenticated);
+        return of(false);
+      })
     );
   }
 }
